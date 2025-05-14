@@ -541,7 +541,6 @@ button_urutkan_penjual.grid(row=0, column=3, padx=5)
 button_kembali_penjual = ttk.Button(frame_kiri_penjual, text="Kembali ke Halaman Awal", bootstyle="dark", command=ke_halaman_awal)
 button_kembali_penjual.pack(pady=(30,10), ipady=5, fill='x')
 
-# Frame Kanan (Treeview) Penjual
 frame_kanan_penjual = ttk.Frame(frame_penjual_container, padding=10)
 frame_kanan_penjual.pack(side='right', fill='both', expand=True)
 
