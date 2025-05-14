@@ -1,653 +1,509 @@
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
-from tkinter import messagebox, simpledialog
+from tkinter import messagebox
 
-DATA_PRODUK = []
-KERANJANG_BELANJA = []
-PRODUK_SEDANG_DIEDIT_NAMA_ASLI = None
+daftar_produk = []
+keranjang_belanja = []
+produk_sedang_diedit = None
 
-def sequential_search_produk(nama_produk, data_list):
-    found_index = -1
-    i = 0
-    still_searching = True
-    while i < len(data_list) and still_searching:
-        if data_list[i]['nama'] == nama_produk:
-            found_index = i
-            still_searching = False  # Hentikan pencarian setelah ditemukan
-        i += 1
-    return found_index
+def cari_produk(nama, data):
+    ditemukan = -1
+    posisi = 0
+    while posisi < len(data):
+        if data[posisi]['nama'] == nama:
+            ditemukan = posisi
+            break
+        posisi += 1
+    return ditemukan
 
-def insertion_sort_produk(data_list, kriteria, urutan):
-    n = len(data_list)
+def urutkan_produk(data, kriteria, arah):
+    panjang = len(data)
     i = 1
-    while i < n:
-        key_item = data_list[i]
+    while i < panjang:
+        produk = data[i]
         j = i - 1
         
-        compare_condition_met = False
-        if urutan == 'naik':
+        if arah == 'naik':
             if kriteria == 'harga':
-                if j >= 0 and key_item['harga'] < data_list[j]['harga']:
-                    compare_condition_met = True
-            else: 
-                if j >= 0 and key_item['nama'] < data_list[j]['nama']:
-                    compare_condition_met = True
-        else: 
-            if kriteria == 'harga':
-                if j >= 0 and key_item['harga'] > data_list[j]['harga']:
-                    compare_condition_met = True
+                while j >= 0 and produk['harga'] < data[j]['harga']:
+                    data[j+1] = data[j]
+                    j -= 1
             else:
-                if j >= 0 and key_item['nama'] > data_list[j]['nama']:
-                    compare_condition_met = True
+                while j >= 0 and produk['nama'] < data[j]['nama']:
+                    data[j+1] = data[j]
+                    j -= 1
+        else:
+            if kriteria == 'harga':
+                while j >= 0 and produk['harga'] > data[j]['harga']:
+                    data[j+1] = data[j]
+                    j -= 1
+            else:
+                while j >= 0 and produk['nama'] > data[j]['nama']:
+                    data[j+1] = data[j]
+                    j -= 1
         
-        while compare_condition_met:
-            data_list[j + 1] = data_list[j]
-            j -= 1
-            compare_condition_met = False
-            if urutan == 'naik':
-                if kriteria == 'harga':
-                    if j >= 0 and key_item['harga'] < data_list[j]['harga']:
-                        compare_condition_met = True
-                else:
-                    if j >= 0 and key_item['nama'] < data_list[j]['nama']:
-                        compare_condition_met = True
-            else: 
-                if kriteria == 'harga':
-                    if j >= 0 and key_item['harga'] > data_list[j]['harga']:
-                        compare_condition_met = True
-                else:
-                    if j >= 0 and key_item['nama'] > data_list[j]['nama']:
-                        compare_condition_met = True
-                        
-        data_list[j + 1] = key_item
+        data[j+1] = produk
         i += 1
 
-def refresh_penjual_treeview(search_term="", sort_criteria="nama", sort_order="naik"):
-    for item in tree_penjual.get_children():
-        tree_penjual.delete(item)
-
-    display_list = list(DATA_PRODUK)
-
-    if search_term:
-        filtered_list = []
-        i = 0
-        while i < len(display_list):
-            if search_term.lower() in display_list[i]['nama'].lower():
-                filtered_list.append(display_list[i])
-            i += 1
-        display_list = filtered_list
+def segarkan_tampilan_penjual():
+    for item in tabel_penjual.get_children():
+        tabel_penjual.delete(item)
     
-    insertion_sort_produk(display_list, sort_criteria, sort_order)
+    tampilkan = list(daftar_produk)
+    
+    if input_cari_penjual.get():
+        hasil_cari = []
+        for produk in tampilkan:
+            if input_cari_penjual.get().lower() in produk['nama'].lower():
+                hasil_cari.append(produk)
+        tampilkan = hasil_cari
+    
+    urutkan_produk(tampilkan, pilihan_kriteria.get().lower(), pilihan_urutan.get().lower())
+    
+    for produk in tampilkan:
+        tabel_penjual.insert("", "end", values=(produk['nama'], f"Rp{produk['harga']:,}", produk['stok']))
 
-    idx = 0
-    while idx < len(display_list):
-        produk = display_list[idx]
-        tree_penjual.insert("", "end", values=(produk['nama'], f"Rp{produk['harga']:,}", produk['stok']))
-        idx += 1
-
-def aksi_tambah_atau_edit_produk():
-    global PRODUK_SEDANG_DIEDIT_NAMA_ASLI
-
-    nama = entry_nama.get()
-    harga_str = entry_harga.get()
-    stok_str = entry_stok.get()
-
-    if not nama or not harga_str or not stok_str:
-        messagebox.showerror("Error", "Semua field harus diisi!")
+def tambah_edit_produk():
+    global produk_sedang_diedit
+    
+    nama = input_nama.get()
+    harga = input_harga.get()
+    stok = input_stok.get()
+    
+    if not nama or not harga or not stok:
+        messagebox.showerror("Error", "Harap isi semua kolom!")
         return
-
+    
     try:
-        harga = int(harga_str)
-        stok = int(stok_str)
-        if harga <= 0 or stok < 0: # Stok bisa 0
-            raise ValueError("Harga atau stok tidak valid.")
-    except ValueError:
-        messagebox.showerror("Error", "Harga dan stok harus angka positif (stok boleh 0).")
+        harga = int(harga)
+        stok = int(stok)
+        if harga <= 0 or stok < 0:
+            raise ValueError
+    except:
+        messagebox.showerror("Error", "Harga dan stok harus angka positif!")
         return
-
-    if PRODUK_SEDANG_DIEDIT_NAMA_ASLI: # Mode Edit
-        index_produk = sequential_search_produk(PRODUK_SEDANG_DIEDIT_NAMA_ASLI, DATA_PRODUK)
-        
-        if index_produk != -1:
-            if nama != PRODUK_SEDANG_DIEDIT_NAMA_ASLI:
-                existing_index_new_name = sequential_search_produk(nama, DATA_PRODUK)
-                if existing_index_new_name != -1:
-                    messagebox.showerror("Error", f"Produk dengan nama '{nama}' sudah ada.")
+    
+    if produk_sedang_diedit:
+        indeks = cari_produk(produk_sedang_diedit, daftar_produk)
+        if indeks != -1:
+            if nama != produk_sedang_diedit:
+                if cari_produk(nama, daftar_produk) != -1:
+                    messagebox.showerror("Error", "Nama produk sudah ada!")
                     return
-
-            DATA_PRODUK[index_produk]['nama'] = nama
-            DATA_PRODUK[index_produk]['harga'] = harga
-            DATA_PRODUK[index_produk]['stok'] = stok
-            messagebox.showinfo("Sukses", "Produk berhasil diperbarui!")
-        else:
-            messagebox.showerror("Error", "Produk asli yang diedit tidak ditemukan. Ini seharusnya tidak terjadi.")
+            
+            daftar_produk[indeks]['nama'] = nama
+            daftar_produk[indeks]['harga'] = harga
+            daftar_produk[indeks]['stok'] = stok
+            messagebox.showinfo("Sukses", "Produk berhasil diupdate!")
         
-        PRODUK_SEDANG_DIEDIT_NAMA_ASLI = None
-        button_tambah_edit.config(text="Tambah Produk")
-        label_form_produk.config(text="Tambah Produk Baru")
-
+        produk_sedang_diedit = None
+        tombol_tambah_edit.config(text="Tambah Produk")
+        label_form.config(text="Tambah Produk Baru")
     else:
-        if sequential_search_produk(nama, DATA_PRODUK) != -1:
-            messagebox.showerror("Error", f"ProduK dengan nama '{nama}' sudah ada!")
+        if cari_produk(nama, daftar_produk) != -1:
+            messagebox.showerror("Error", "Produk sudah ada!")
             return
         
-        DATA_PRODUK.append({'nama': nama, 'harga': harga, 'stok': stok})
+        daftar_produk.append({'nama': nama, 'harga': harga, 'stok': stok})
         messagebox.showinfo("Sukses", "Produk berhasil ditambahkan!")
-
-    entry_nama.delete(0, 'end')
-    entry_harga.delete(0, 'end')
-    entry_stok.delete(0, 'end')
     
-    refresh_penjual_treeview(
-        search_term_penjual.get(), 
-        combo_sort_kriteria_penjual.get().lower(), 
-        combo_sort_urutan_penjual.get().lower()
-    )
-    refresh_pembeli_treeview() # Update juga tampilan pembeli
+    input_nama.delete(0, 'end')
+    input_harga.delete(0, 'end')
+    input_stok.delete(0, 'end')
+    
+    segarkan_tampilan_penjual()
+    segarkan_tampilan_pembeli()
 
-def muat_produk_untuk_edit():
-    global PRODUK_SEDANG_DIEDIT_NAMA_ASLI
-    selected_items = tree_penjual.selection()
-    if not selected_items:
-        messagebox.showerror("Error", "Pilih produk yang akan diedit!")
+def muat_untuk_edit():
+    global produk_sedang_diedit
+    terpilih = tabel_penjual.selection()
+    if not terpilih:
+        messagebox.showerror("Error", "Pilih produk dulu!")
         return
     
-    selected_item_id = selected_items[0]
-    produk_values = tree_penjual.item(selected_item_id)['values']
+    data = tabel_penjual.item(terpilih[0])['values']
+    produk_sedang_diedit = data[0]
     
-    nama_produk_terpilih = produk_values[0]
-    harga_produk_terpilih_str = produk_values[1].replace("Rp", "").replace(",", "")
-    stok_produk_terpilih_str = str(produk_values[2])
+    input_nama.delete(0, 'end')
+    input_nama.insert(0, data[0])
+    input_harga.delete(0, 'end')
+    input_harga.insert(0, data[1].replace("Rp","").replace(",",""))
+    input_stok.delete(0, 'end')
+    input_stok.insert(0, data[2])
+    
+    tombol_tambah_edit.config(text="Simpan Perubahan")
+    label_form.config(text=f"Edit Produk: {data[0]}")
 
-    PRODUK_SEDANG_DIEDIT_NAMA_ASLI = nama_produk_terpilih
-    
-    entry_nama.delete(0, 'end')
-    entry_nama.insert(0, nama_produk_terpilih)
-    entry_harga.delete(0, 'end')
-    entry_harga.insert(0, harga_produk_terpilih_str)
-    entry_stok.delete(0, 'end')
-    entry_stok.insert(0, stok_produk_terpilih_str)
-    
-    button_tambah_edit.config(text="Simpan Perubahan")
-    label_form_produk.config(text=f"Edit Produk: {nama_produk_terpilih}")
-    entry_nama.focus() # Fokus ke entry nama
-
-def hapus_produk_terpilih():
-    global PRODUK_SEDANG_DIEDIT_NAMA_ASLI
-    selected_items = tree_penjual.selection()
-    if not selected_items:
-        messagebox.showerror("Error", "Pilih produk yang akan dihapus!")
+def hapus_produk():
+    global produk_sedang_diedit
+    terpilih = tabel_penjual.selection()
+    if not terpilih:
+        messagebox.showerror("Error", "Pilih produk dulu!")
         return
-
-    selected_item_id = selected_items[0]
-    nama_produk_dihapus = tree_penjual.item(selected_item_id)['values'][0]
-
-    if messagebox.askyesno("Konfirmasi", f"Apakah Anda yakin ingin menghapus produk '{nama_produk_dihapus}'?"):
-        index_to_delete = sequential_search_produk(nama_produk_dihapus, DATA_PRODUK)
-        
-        if index_to_delete != -1:
-            del DATA_PRODUK[index_to_delete]
-            messagebox.showinfo("Sukses", f"Produk '{nama_produk_dihapus}' berhasil dihapus.")
+    
+    nama = tabel_penjual.item(terpilih[0])['values'][0]
+    
+    if messagebox.askyesno("Konfirmasi", f"Hapus produk {nama}?"):
+        indeks = cari_produk(nama, daftar_produk)
+        if indeks != -1:
+            del daftar_produk[indeks]
+            messagebox.showinfo("Sukses", "Produk dihapus!")
             
-            if PRODUK_SEDANG_DIEDIT_NAMA_ASLI == nama_produk_dihapus:
-                PRODUK_SEDANG_DIEDIT_NAMA_ASLI = None
-                entry_nama.delete(0, 'end')
-                entry_harga.delete(0, 'end')
-                entry_stok.delete(0, 'end')
-                button_tambah_edit.config(text="Tambah Produk")
-                label_form_produk.config(text="Tambah Produk Baru")
-        else:
-            messagebox.showerror("Error", "Produk tidak ditemukan di data internal. Ini seharusnya tidak terjadi.")
-
-        refresh_penjual_treeview(
-            search_term_penjual.get(),
-            combo_sort_kriteria_penjual.get().lower(),
-            combo_sort_urutan_penjual.get().lower()
-        )
-        refresh_pembeli_treeview() # Update juga tampilan pembeli
-
-def cari_produk_penjual():
-    refresh_penjual_treeview(
-        search_term_penjual.get(),
-        combo_sort_kriteria_penjual.get().lower(),
-        combo_sort_urutan_penjual.get().lower()
-    )
-
-def urutkan_produk_penjual():
-    refresh_penjual_treeview(
-        search_term_penjual.get(),
-        combo_sort_kriteria_penjual.get().lower(),
-        combo_sort_urutan_penjual.get().lower()
-    )
-
-def refresh_pembeli_treeview(search_term="", sort_criteria="nama", sort_order="naik"):
-    for item in tree_pembeli.get_children():
-        tree_pembeli.delete(item)
-
-    display_list_pembeli = []
-    i = 0
-    while i < len(DATA_PRODUK):
-        if DATA_PRODUK[i]['stok'] > 0:
-            display_list_pembeli.append(dict(DATA_PRODUK[i])) # Salin dict agar aman
-        i += 1
-    
-    if search_term:
-        filtered_list = []
-        i = 0
-        while i < len(display_list_pembeli):
-            if search_term.lower() in display_list_pembeli[i]['nama'].lower():
-                filtered_list.append(display_list_pembeli[i])
-            i += 1
-        display_list_pembeli = filtered_list
-    
-    insertion_sort_produk(display_list_pembeli, sort_criteria, sort_order)
-    
-    idx = 0
-    while idx < len(display_list_pembeli):
-        produk = display_list_pembeli[idx]
-        tree_pembeli.insert("", "end", values=(produk['nama'], f"Rp{produk['harga']:,}", produk['stok']))
-        idx += 1
-
-def cari_produk_pembeli():
-    refresh_pembeli_treeview(
-        search_term_pembeli.get(),
-        combo_sort_kriteria_pembeli.get().lower(),
-        combo_sort_urutan_pembeli.get().lower()
-    )
-
-def urutkan_produk_pembeli():
-    refresh_pembeli_treeview(
-        search_term_pembeli.get(),
-        combo_sort_kriteria_pembeli.get().lower(),
-        combo_sort_urutan_pembeli.get().lower()
-    )
-
-def refresh_keranjang_treeview():
-    """Membersihkan dan mengisi ulang Treeview keranjang dengan data dari KERANJANG_BELANJA."""
-    for item in tree_keranjang.get_children():
-        tree_keranjang.delete(item)
-    
-    total_harga_keranjang = 0
-    i = 0
-    while i < len(KERANJANG_BELANJA):
-        item_keranjang = KERANJANG_BELANJA[i]
-        tree_keranjang.insert("", "end", values=(
-            item_keranjang['nama'], 
-            f"Rp{item_keranjang['harga_satuan']:,}", 
-            item_keranjang['jumlah'], 
-            f"Rp{item_keranjang['subtotal']:,}"
-        ))
-        total_harga_keranjang += item_keranjang['subtotal']
-        i += 1
-    
-    label_total.config(text=f"Total: Rp{total_harga_keranjang:,}")
-
-
-def tambah_ke_keranjang():
-    """Menambahkan produk yang dipilih dari tree_pembeli ke KERANJANG_BELANJA."""
-    selected_items_pembeli = tree_pembeli.selection()
-    if not selected_items_pembeli:
-        messagebox.showerror("Error", "Pilih produk yang akan dibeli!")
-        return
-    
-    selected_item_id = selected_items_pembeli[0]
-    produk_values = tree_pembeli.item(selected_item_id)['values']
-    
-    nama_produk = produk_values[0]
-    harga_str = produk_values[1].replace("Rp", "").replace(",", "")
-    # Stok tersedia di tree_pembeli adalah stok terbaru dari DATA_PRODUK
-    # Namun, kita perlu cek stok aktual di DATA_PRODUK karena tree_pembeli bisa jadi tampilan terfilter/terurut
-    
-    produk_asli_idx = sequential_search_produk(nama_produk, DATA_PRODUK)
-    if produk_asli_idx == -1:
-        messagebox.showerror("Error", "Produk tidak ditemukan di data utama. Sinkronisasi mungkin bermasalah.")
-        return
+            if produk_sedang_diedit == nama:
+                produk_sedang_diedit = None
+                input_nama.delete(0, 'end')
+                input_harga.delete(0, 'end')
+                input_stok.delete(0, 'end')
+                tombol_tambah_edit.config(text="Tambah Produk")
+                label_form.config(text="Tambah Produk Baru")
         
-    produk_asli = DATA_PRODUK[produk_asli_idx]
-    harga_produk = produk_asli['harga']
-    stok_tersedia = produk_asli['stok']
+        segarkan_tampilan_penjual()
+        segarkan_tampilan_pembeli()
 
+def segarkan_tampilan_pembeli():
+    for item in tabel_pembeli.get_children():
+        tabel_pembeli.delete(item)
+    
+    tampilkan = []
+    for produk in daftar_produk:
+        if produk['stok'] > 0:
+            tampilkan.append(dict(produk))
+    
+    if input_cari_pembeli.get():
+        hasil_cari = []
+        for produk in tampilkan:
+            if input_cari_pembeli.get().lower() in produk['nama'].lower():
+                hasil_cari.append(produk)
+        tampilkan = hasil_cari
+    
+    urutkan_produk(tampilkan, pilihan_kriteria_pembeli.get().lower(), pilihan_urutan_pembeli.get().lower())
+    
+    for produk in tampilkan:
+        tabel_pembeli.insert("", "end", values=(produk['nama'], f"Rp{produk['harga']:,}", produk['stok']))
+
+def segarkan_keranjang():
+    for item in tabel_keranjang.get_children():
+        tabel_keranjang.delete(item)
+    
+    total = 0
+    for item in keranjang_belanja:
+        tabel_keranjang.insert("", "end", values=(
+            item['nama'],
+            f"Rp{item['harga']:,}",
+            item['jumlah'],
+            f"Rp{item['subtotal']:,}"
+        ))
+        total += item['subtotal']
+    
+    label_total.config(text=f"Total: Rp{total:,}")
+
+def tambah_keranjang():
+    terpilih = tabel_pembeli.selection()
+    if not terpilih:
+        messagebox.showerror("Error", "Pilih produk dulu!")
+        return
+    
+    data = tabel_pembeli.item(terpilih[0])['values']
+    nama = data[0]
+    harga = int(data[1].replace("Rp","").replace(",",""))
+    
     try:
-        jumlah_beli = int(spinbox_jumlah.get())
-        if jumlah_beli <= 0:
+        jumlah = int(input_jumlah.get())
+        if jumlah <= 0:
             raise ValueError
-    except ValueError:
+    except:
         messagebox.showerror("Error", "Jumlah harus angka positif!")
         return
-
-    if jumlah_beli > stok_tersedia:
-        messagebox.showerror("Error", f"Stok tidak mencukupi! Tersedia: {stok_tersedia}")
+    
+    indeks = cari_produk(nama, daftar_produk)
+    if indeks == -1:
+        messagebox.showerror("Error", "Produk tidak ditemukan!")
         return
-
-    # Kurangi stok di DATA_PRODUK
-    DATA_PRODUK[produk_asli_idx]['stok'] -= jumlah_beli
     
-    # Cek apakah produk sudah ada di keranjang, jika ya, update jumlahnya
-    indeks_item_di_keranjang = -1
-    i = 0
-    searching_in_cart = True
-    while i < len(KERANJANG_BELANJA) and searching_in_cart:
-        if KERANJANG_BELANJA[i]['nama'] == nama_produk:
-            indeks_item_di_keranjang = i
-            searching_in_cart = False
-        i += 1
-
-    if indeks_item_di_keranjang != -1:
-        KERANJANG_BELANJA[indeks_item_di_keranjang]['jumlah'] += jumlah_beli
-        KERANJANG_BELANJA[indeks_item_di_keranjang]['subtotal'] = KERANJANG_BELANJA[indeks_item_di_keranjang]['jumlah'] * harga_produk
+    if jumlah > daftar_produk[indeks]['stok']:
+        messagebox.showerror("Error", f"Stok tidak cukup! Tersedia: {daftar_produk[indeks]['stok']}")
+        return
+    
+    daftar_produk[indeks]['stok'] -= jumlah
+    
+    ditemukan = -1
+    for i, item in enumerate(keranjang_belanja):
+        if item['nama'] == nama:
+            ditemukan = i
+            break
+    
+    if ditemukan != -1:
+        keranjang_belanja[ditemukan]['jumlah'] += jumlah
+        keranjang_belanja[ditemukan]['subtotal'] = keranjang_belanja[ditemukan]['jumlah'] * harga
     else:
-        KERANJANG_BELANJA.append({
-            'nama': nama_produk,
-            'harga_satuan': harga_produk,
-            'jumlah': jumlah_beli,
-            'subtotal': harga_produk * jumlah_beli
+        keranjang_belanja.append({
+            'nama': nama,
+            'harga': harga,
+            'jumlah': jumlah,
+            'subtotal': harga * jumlah
         })
-        
-    messagebox.showinfo("Sukses", f"{jumlah_beli} x {nama_produk} ditambahkan ke keranjang.")
     
-    refresh_pembeli_treeview(
-        search_term_pembeli.get(),
-        combo_sort_kriteria_pembeli.get().lower(),
-        combo_sort_urutan_pembeli.get().lower()
-    ) # Untuk update stok di tampilan pembeli
-    refresh_keranjang_treeview()
-    spinbox_jumlah.set(1) # Reset spinbox
+    messagebox.showinfo("Sukses", f"{jumlah} {nama} ditambahkan!")
+    segarkan_tampilan_pembeli()
+    segarkan_keranjang()
+    input_jumlah.set(1)
 
 def hapus_dari_keranjang():
-    """Menghapus item yang dipilih dari KERANJANG_BELANJA dan mengembalikan stoknya ke DATA_PRODUK."""
-    selected_items_keranjang = tree_keranjang.selection()
-    if not selected_items_keranjang:
-        messagebox.showerror("Error", "Pilih item dari keranjang yang akan dihapus!")
+    terpilih = tabel_keranjang.selection()
+    if not terpilih:
+        messagebox.showerror("Error", "Pilih item dulu!")
         return
-        
-    selected_item_id = selected_items_keranjang[0]
-    item_values = tree_keranjang.item(selected_item_id)['values']
-    nama_produk = item_values[0]
-    jumlah_dihapus_dari_keranjang = int(item_values[2])
-
-    # Cari item di KERANJANG_BELANJA untuk dihapus
-    indeks_hapus_keranjang = -1
-    i = 0
-    found_in_cart = False
-    while i < len(KERANJANG_BELANJA) and not found_in_cart:
-        if KERANJANG_BELANJA[i]['nama'] == nama_produk:
-            indeks_hapus_keranjang = i
-            found_in_cart = True
-        i += 1
     
-    if indeks_hapus_keranjang != -1:
-        del KERANJANG_BELANJA[indeks_hapus_keranjang]
+    data = tabel_keranjang.item(terpilih[0])['values']
+    nama = data[0]
+    jumlah = int(data[2])
+    
+    indeks = -1
+    for i, item in enumerate(keranjang_belanja):
+        if item['nama'] == nama:
+            indeks = i
+            break
+    
+    if indeks != -1:
+        del keranjang_belanja[indeks]
         
-        # Kembalikan stok ke DATA_PRODUK
-        produk_asli_idx = sequential_search_produk(nama_produk, DATA_PRODUK)
-        if produk_asli_idx != -1:
-            DATA_PRODUK[produk_asli_idx]['stok'] += jumlah_dihapus_dari_keranjang
-        else:
-            # Seharusnya tidak terjadi jika data konsisten
-            messagebox.showwarning("Peringatan", f"Produk {nama_produk} tidak ditemukan di data utama untuk pengembalian stok.")
+        indeks_produk = cari_produk(nama, daftar_produk)
+        if indeks_produk != -1:
+            daftar_produk[indeks_produk]['stok'] += jumlah
+        
+        messagebox.showinfo("Sukses", f"{nama} dihapus dari keranjang!")
+        segarkan_tampilan_pembeli()
+        segarkan_keranjang()
 
-        messagebox.showinfo("Sukses", f"Item '{nama_produk}' dihapus dari keranjang.")
-        refresh_pembeli_treeview(
-            search_term_pembeli.get(),
-            combo_sort_kriteria_pembeli.get().lower(),
-            combo_sort_urutan_pembeli.get().lower()
-        )
-        refresh_keranjang_treeview()
-    else:
-        messagebox.showerror("Error", "Item tidak ditemukan di data keranjang internal.")
-
-
-def checkout_keranjang():
-    """Memproses checkout keranjang belanja."""
-    if not KERANJANG_BELANJA:
-        messagebox.showerror("Error", "Keranjang belanja kosong!")
+def checkout():
+    if not keranjang_belanja:
+        messagebox.showerror("Error", "Keranjang kosong!")
         return
-
-    total_belanja_str = label_total.cget("text").replace("Total: ", "")
     
-    # Buat struk sederhana
-    items_struk = ""
-    i = 0
-    while i < len(KERANJANG_BELANJA):
-        item = KERANJANG_BELANJA[i]
-        items_struk += f"{item['nama']} ({item['jumlah']} x Rp{item['harga_satuan']:,}) = Rp{item['subtotal']:,}\n"
-        i += 1
+    struk = "Terima kasih telah berbelanja!\n\n"
+    for item in keranjang_belanja:
+        struk += f"{item['nama']} ({item['jumlah']} x Rp{item['harga']:,}) = Rp{item['subtotal']:,}\n"
     
-    pesan_checkout = f"Terima kasih telah berbelanja!\n\nDetail Pembelian:\n{items_struk}\nTotal Keseluruhan: {total_belanja_str}"
-    messagebox.showinfo("Checkout Berhasil", pesan_checkout)
+    struk += f"\nTotal: Rp{label_total.cget('text').replace('Total: ','')}"
+    messagebox.showinfo("Checkout Berhasil", struk)
     
-    # Kosongkan keranjang
-    KERANJANG_BELANJA.clear() # Cara mudah mengosongkan list
-    
-    # Stok sudah terupdate saat item ditambahkan ke keranjang, jadi tidak perlu update stok lagi di sini.
-    # Refresh tampilan
-    refresh_keranjang_treeview()
-    # Stok di tree_pembeli juga sudah terupdate, jadi tidak perlu refresh tree_pembeli lagi
-    # kecuali ada kebutuhan khusus. Refresh_pembeli_treeview sudah dipanggil saat tambah/hapus keranjang.
+    keranjang_belanja.clear()
+    segarkan_keranjang()
 
+def tampilkan_halaman(halaman):
+    halaman_awal.pack_forget()
+    halaman_penjual.pack_forget()
+    halaman_pembeli.pack_forget()
+    halaman.pack(fill='both', expand=True)
 
-# --- Fungsi Navigasi Halaman ---
-def tampilkan_frame(frame_target):
-    """Menyembunyikan semua frame utama dan menampilkan frame target."""
-    frame_awal.pack_forget()
-    frame_penjual_container.pack_forget()
-    frame_pembeli_container.pack_forget()
-    frame_target.pack(fill='both', expand=True)
+def ke_awal():
+    global produk_sedang_diedit
+    produk_sedang_diedit = None
+    tombol_tambah_edit.config(text="Tambah Produk")
+    label_form.config(text="Tambah Produk Baru")
+    input_nama.delete(0, 'end')
+    input_harga.delete(0, 'end')
+    input_stok.delete(0, 'end')
+    tampilkan_halaman(halaman_awal)
 
-def ke_halaman_awal():
-    global PRODUK_SEDANG_DIEDIT_NAMA_ASLI
-    PRODUK_SEDANG_DIEDIT_NAMA_ASLI = None # Reset mode edit jika kembali ke awal
-    button_tambah_edit.config(text="Tambah Produk")
-    label_form_produk.config(text="Tambah Produk Baru")
-    entry_nama.delete(0, 'end')
-    entry_harga.delete(0, 'end')
-    entry_stok.delete(0, 'end')
-    tampilkan_frame(frame_awal)
+def ke_penjual():
+    segarkan_tampilan_penjual()
+    tampilkan_halaman(halaman_penjual)
 
-def ke_halaman_penjual():
-    refresh_penjual_treeview() # Selalu refresh saat masuk halaman
-    tampilkan_frame(frame_penjual_container)
+def ke_pembeli():
+    segarkan_tampilan_pembeli()
+    segarkan_keranjang()
+    tampilkan_halaman(halaman_pembeli)
 
-def ke_halaman_pembeli():
-    refresh_pembeli_treeview() # Selalu refresh saat masuk halaman
-    refresh_keranjang_treeview() # Juga refresh keranjang
-    tampilkan_frame(frame_pembeli_container)
-
-# --- Inisialisasi Aplikasi Utama ---
+# MEMBUAT TAMPILAN
 app = ttk.Window(themename="minty", title="Toko MaduMart", size=(900, 700))
 app.resizable(True, True)
 
-# --- Frame Awal ---
-frame_awal = ttk.Frame(app)
-label_judul_awal = ttk.Label(frame_awal, text="Selamat Datang di Toko MaduMart", font=("Arial", 26, "bold"))
-label_judul_awal.pack(pady=(60,30))
-label_sub_judul_awal = ttk.Label(frame_awal, text="Silakan pilih peran Anda:", font=("Arial", 16))
-label_sub_judul_awal.pack(pady=10)
+# HALAMAN AWAL
+halaman_awal = ttk.Frame(app)
+label_judul = ttk.Label(halaman_awal, text="Selamat Datang di Toko MaduMart", font=("Arial", 26, "bold"))
+label_judul.pack(pady=(60,30))
+label_sub = ttk.Label(halaman_awal, text="Silakan pilih peran Anda:", font=("Arial", 16))
+label_sub.pack(pady=10)
 
-frame_tombol_awal = ttk.Frame(frame_awal)
-frame_tombol_awal.pack(pady=20)
+frame_tombol = ttk.Frame(halaman_awal)
+frame_tombol.pack(pady=20)
 
-button_ke_penjual = ttk.Button(frame_tombol_awal, text="Masuk sebagai Penjual", bootstyle="primary-outline", width=30, command=ke_halaman_penjual)
-button_ke_penjual.pack(pady=15, ipady=5)
-button_ke_pembeli = ttk.Button(frame_tombol_awal, text="Masuk sebagai Pembeli", bootstyle="success-outline", width=30, command=ke_halaman_pembeli)
-button_ke_pembeli.pack(pady=15, ipady=5)
+tombol_penjual = ttk.Button(frame_tombol, text="Masuk sebagai Penjual", bootstyle="primary-outline", width=30, command=ke_penjual)
+tombol_penjual.pack(pady=15, ipady=5)
+tombol_pembeli = ttk.Button(frame_tombol, text="Masuk sebagai Pembeli", bootstyle="success-outline", width=30, command=ke_pembeli)
+tombol_pembeli.pack(pady=15, ipady=5)
 
-# --- Frame Penjual (Container) ---
-frame_penjual_container = ttk.Frame(app)
+# HALAMAN PENJUAL
+halaman_penjual = ttk.Frame(app)
 
-# Frame Kiri (Input dan Kontrol) Penjual
-frame_kiri_penjual = ttk.Frame(frame_penjual_container, padding=10)
-frame_kiri_penjual.pack(side='left', fill='y', padx=10, pady=10)
+# Panel kiri
+panel_kiri = ttk.Frame(halaman_penjual, padding=10)
+panel_kiri.pack(side='left', fill='y', padx=10, pady=10)
 
-label_judul_penjual = ttk.Label(frame_kiri_penjual, text="Manajemen Produk", font=("Arial", 20, "bold"))
+label_judul_penjual = ttk.Label(panel_kiri, text="Manajemen Produk", font=("Arial", 20, "bold"))
 label_judul_penjual.pack(pady=(0,15))
 
-# Form Tambah/Edit Produk
-label_form_produk = ttk.Label(frame_kiri_penjual, text="Tambah Produk Baru", font=("Arial", 12))
-label_form_produk.pack(pady=(10,5))
+# Form produk
+label_form = ttk.Label(panel_kiri, text="Tambah Produk Baru", font=("Arial", 12))
+label_form.pack(pady=(10,5))
 
-frame_form_produk = ttk.Frame(frame_kiri_penjual)
-frame_form_produk.pack(pady=5)
-ttk.Label(frame_form_produk, text="Nama Produk:").grid(row=0, column=0, padx=5, pady=5, sticky='w')
-entry_nama = ttk.Entry(frame_form_produk, width=30)
-entry_nama.grid(row=0, column=1, padx=5, pady=5)
-ttk.Label(frame_form_produk, text="Harga (Rp):").grid(row=1, column=0, padx=5, pady=5, sticky='w')
-entry_harga = ttk.Entry(frame_form_produk, width=30)
-entry_harga.grid(row=1, column=1, padx=5, pady=5)
-ttk.Label(frame_form_produk, text="Stok:").grid(row=2, column=0, padx=5, pady=5, sticky='w')
-entry_stok = ttk.Entry(frame_form_produk, width=30)
-entry_stok.grid(row=2, column=1, padx=5, pady=5)
+frame_form = ttk.Frame(panel_kiri)
+frame_form.pack(pady=5)
+ttk.Label(frame_form, text="Nama Produk:").grid(row=0, column=0, padx=5, pady=5, sticky='w')
+input_nama = ttk.Entry(frame_form, width=30)
+input_nama.grid(row=0, column=1, padx=5, pady=5)
+ttk.Label(frame_form, text="Harga (Rp):").grid(row=1, column=0, padx=5, pady=5, sticky='w')
+input_harga = ttk.Entry(frame_form, width=30)
+input_harga.grid(row=1, column=1, padx=5, pady=5)
+ttk.Label(frame_form, text="Stok:").grid(row=2, column=0, padx=5, pady=5, sticky='w')
+input_stok = ttk.Entry(frame_form, width=30)
+input_stok.grid(row=2, column=1, padx=5, pady=5)
 
-button_tambah_edit = ttk.Button(frame_form_produk, text="Tambah Produk", bootstyle="primary", command=aksi_tambah_atau_edit_produk)
-button_tambah_edit.grid(row=3, column=0, columnspan=2, pady=10)
+tombol_tambah_edit = ttk.Button(frame_form, text="Tambah Produk", bootstyle="primary", command=tambah_edit_produk)
+tombol_tambah_edit.grid(row=3, column=0, columnspan=2, pady=10)
 
-ttk.Separator(frame_kiri_penjual, orient='horizontal').pack(fill='x', pady=15)
+ttk.Separator(panel_kiri, orient='horizontal').pack(fill='x', pady=15)
 
-# Kontrol Treeview Penjual (Edit Terpilih, Hapus Terpilih)
-label_aksi_produk = ttk.Label(frame_kiri_penjual, text="Aksi pada Produk Terpilih:", font=("Arial", 12))
-label_aksi_produk.pack(pady=(10,5))
-frame_aksi_tree_penjual = ttk.Frame(frame_kiri_penjual)
-frame_aksi_tree_penjual.pack(pady=5)
-button_muat_edit = ttk.Button(frame_aksi_tree_penjual, text="Muat untuk Edit", bootstyle="info-outline", command=muat_produk_untuk_edit)
-button_muat_edit.pack(side='left', padx=5)
-button_hapus_produk = ttk.Button(frame_aksi_tree_penjual, text="Hapus Produk", bootstyle="danger-outline", command=hapus_produk_terpilih)
-button_hapus_produk.pack(side='left', padx=5)
+# Aksi produk
+label_aksi = ttk.Label(panel_kiri, text="Aksi pada Produk Terpilih:", font=("Arial", 12))
+label_aksi.pack(pady=(10,5))
+frame_aksi = ttk.Frame(panel_kiri)
+frame_aksi.pack(pady=5)
+tombol_edit = ttk.Button(frame_aksi, text="Muat untuk Edit", bootstyle="info-outline", command=muat_untuk_edit)
+tombol_edit.pack(side='left', padx=5)
+tombol_hapus = ttk.Button(frame_aksi, text="Hapus Produk", bootstyle="danger-outline", command=hapus_produk)
+tombol_hapus.pack(side='left', padx=5)
 
-ttk.Separator(frame_kiri_penjual, orient='horizontal').pack(fill='x', pady=15)
+ttk.Separator(panel_kiri, orient='horizontal').pack(fill='x', pady=15)
 
-# Pencarian dan Pengurutan Penjual
-label_filter_penjual = ttk.Label(frame_kiri_penjual, text="Pencarian & Pengurutan:", font=("Arial", 12))
-label_filter_penjual.pack(pady=(10,5))
-frame_filter_penjual = ttk.Frame(frame_kiri_penjual)
-frame_filter_penjual.pack(pady=5, fill='x')
-ttk.Label(frame_filter_penjual, text="Cari Nama:").pack(side='left', padx=(0,5))
-search_term_penjual = ttk.Entry(frame_filter_penjual, width=15)
-search_term_penjual.pack(side='left', padx=5)
-button_cari_penjual = ttk.Button(frame_filter_penjual, text="Cari", bootstyle="secondary", command=cari_produk_penjual, width=5)
-button_cari_penjual.pack(side='left', padx=5)
+# Pencarian dan pengurutan
+label_cari = ttk.Label(panel_kiri, text="Pencarian & Pengurutan:", font=("Arial", 12))
+label_cari.pack(pady=(10,5))
+frame_cari = ttk.Frame(panel_kiri)
+frame_cari.pack(pady=5, fill='x')
+ttk.Label(frame_cari, text="Cari Nama:").pack(side='left', padx=(0,5))
+input_cari_penjual = ttk.Entry(frame_cari, width=15)
+input_cari_penjual.pack(side='left', padx=5)
+tombol_cari = ttk.Button(frame_cari, text="Cari", bootstyle="secondary", command=segarkan_tampilan_penjual, width=5)
+tombol_cari.pack(side='left', padx=5)
 
-frame_sort_penjual = ttk.Frame(frame_kiri_penjual)
-frame_sort_penjual.pack(pady=10, fill='x')
-ttk.Label(frame_sort_penjual, text="Urutkan berdasarkan:").grid(row=0, column=0, sticky='w', padx=(0,5))
-combo_sort_kriteria_penjual = ttk.Combobox(frame_sort_penjual, values=["Nama", "Harga"], state="readonly", width=8)
-combo_sort_kriteria_penjual.set("Nama")
-combo_sort_kriteria_penjual.grid(row=0, column=1, padx=5)
-combo_sort_urutan_penjual = ttk.Combobox(frame_sort_penjual, values=["Naik", "Turun"], state="readonly", width=8)
-combo_sort_urutan_penjual.set("Naik")
-combo_sort_urutan_penjual.grid(row=0, column=2, padx=5)
-button_urutkan_penjual = ttk.Button(frame_sort_penjual, text="Urutkan", bootstyle="secondary", command=urutkan_produk_penjual, width=7)
-button_urutkan_penjual.grid(row=0, column=3, padx=5)
+frame_urut = ttk.Frame(panel_kiri)
+frame_urut.pack(pady=10, fill='x')
+ttk.Label(frame_urut, text="Urutkan berdasarkan:").grid(row=0, column=0, sticky='w', padx=(0,5))
+pilihan_kriteria = ttk.Combobox(frame_urut, values=["Nama", "Harga"], state="readonly", width=8)
+pilihan_kriteria.set("Nama")
+pilihan_kriteria.grid(row=0, column=1, padx=5)
+pilihan_urutan = ttk.Combobox(frame_urut, values=["Naik", "Turun"], state="readonly", width=8)
+pilihan_urutan.set("Naik")
+pilihan_urutan.grid(row=0, column=2, padx=5)
+tombol_urut = ttk.Button(frame_urut, text="Urutkan", bootstyle="secondary", command=segarkan_tampilan_penjual, width=7)
+tombol_urut.grid(row=0, column=3, padx=5)
 
-button_kembali_penjual = ttk.Button(frame_kiri_penjual, text="Kembali ke Halaman Awal", bootstyle="dark", command=ke_halaman_awal)
-button_kembali_penjual.pack(pady=(30,10), ipady=5, fill='x')
+tombol_kembali = ttk.Button(panel_kiri, text="Kembali ke Halaman Awal", bootstyle="dark", command=ke_awal)
+tombol_kembali.pack(pady=(30,10), ipady=5, fill='x')
 
-frame_kanan_penjual = ttk.Frame(frame_penjual_container, padding=10)
-frame_kanan_penjual.pack(side='right', fill='both', expand=True)
+# Panel kanan
+panel_kanan = ttk.Frame(halaman_penjual, padding=10)
+panel_kanan.pack(side='right', fill='both', expand=True)
 
-label_daftar_produk_penjual = ttk.Label(frame_kanan_penjual, text="Daftar Produk di Toko", font=("Arial", 16, "bold"))
-label_daftar_produk_penjual.pack(pady=(0,10))
-tree_penjual = ttk.Treeview(frame_kanan_penjual, columns=("Nama", "Harga", "Stok"), show="headings", bootstyle="primary")
-tree_penjual.heading("Nama", text="Nama Produk")
-tree_penjual.heading("Harga", text="Harga")
-tree_penjual.heading("Stok", text="Stok")
-tree_penjual.column("Nama", width=250, stretch=True)
-tree_penjual.column("Harga", width=120, anchor='e', stretch=False)
-tree_penjual.column("Stok", width=80, anchor='center', stretch=False)
-tree_penjual.pack(fill='both', expand=True)
+label_daftar = ttk.Label(panel_kanan, text="Daftar Produk di Toko", font=("Arial", 16, "bold"))
+label_daftar.pack(pady=(0,10))
+tabel_penjual = ttk.Treeview(panel_kanan, columns=("Nama", "Harga", "Stok"), show="headings", bootstyle="primary")
+tabel_penjual.heading("Nama", text="Nama Produk")
+tabel_penjual.heading("Harga", text="Harga")
+tabel_penjual.heading("Stok", text="Stok")
+tabel_penjual.column("Nama", width=250, stretch=True)
+tabel_penjual.column("Harga", width=120, anchor='e', stretch=False)
+tabel_penjual.column("Stok", width=80, anchor='center', stretch=False)
+tabel_penjual.pack(fill='both', expand=True)
 
-# --- Frame Pembeli (Container) ---
-frame_pembeli_container = ttk.Frame(app)
+# HALAMAN PEMBELI
+halaman_pembeli = ttk.Frame(app)
 
-# Panel Atas Pembeli (Daftar Produk)
-panel_atas_pembeli = ttk.Frame(frame_pembeli_container, padding=10)
-panel_atas_pembeli.pack(fill='both', expand=True, pady=(0,5))
+# Panel atas
+panel_atas = ttk.Frame(halaman_pembeli, padding=10)
+panel_atas.pack(fill='both', expand=True, pady=(0,5))
 
-label_judul_pembeli = ttk.Label(panel_atas_pembeli, text="Pilih Produk untuk Dibeli", font=("Arial", 20, "bold"))
+label_judul_pembeli = ttk.Label(panel_atas, text="Pilih Produk untuk Dibeli", font=("Arial", 20, "bold"))
 label_judul_pembeli.pack(pady=(0,10))
 
-# Kontrol Pencarian dan Pengurutan Pembeli
-frame_filter_sort_pembeli = ttk.Frame(panel_atas_pembeli)
-frame_filter_sort_pembeli.pack(fill='x', pady=5)
-ttk.Label(frame_filter_sort_pembeli, text="Cari Nama:").pack(side='left', padx=(0,5))
-search_term_pembeli = ttk.Entry(frame_filter_sort_pembeli, width=20)
-search_term_pembeli.pack(side='left', padx=5)
-button_cari_pembeli = ttk.Button(frame_filter_sort_pembeli, text="Cari", bootstyle="secondary", command=cari_produk_pembeli, width=6)
-button_cari_pembeli.pack(side='left', padx=5)
+frame_cari_pembeli = ttk.Frame(panel_atas)
+frame_cari_pembeli.pack(fill='x', pady=5)
+ttk.Label(frame_cari_pembeli, text="Cari Nama:").pack(side='left', padx=(0,5))
+input_cari_pembeli = ttk.Entry(frame_cari_pembeli, width=20)
+input_cari_pembeli.pack(side='left', padx=5)
+tombol_cari_pembeli = ttk.Button(frame_cari_pembeli, text="Cari", bootstyle="secondary", command=segarkan_tampilan_pembeli, width=6)
+tombol_cari_pembeli.pack(side='left', padx=5)
 
-ttk.Label(frame_filter_sort_pembeli, text="Urutkan:").pack(side='left', padx=(15,5))
-combo_sort_kriteria_pembeli = ttk.Combobox(frame_filter_sort_pembeli, values=["Nama", "Harga"], state="readonly", width=10)
-combo_sort_kriteria_pembeli.set("Nama")
-combo_sort_kriteria_pembeli.pack(side='left', padx=5)
-combo_sort_urutan_pembeli = ttk.Combobox(frame_filter_sort_pembeli, values=["Naik", "Turun"], state="readonly", width=10)
-combo_sort_urutan_pembeli.set("Naik")
-combo_sort_urutan_pembeli.pack(side='left', padx=5)
-button_urutkan_pembeli = ttk.Button(frame_filter_sort_pembeli, text="Urutkan", bootstyle="secondary", command=urutkan_produk_pembeli, width=8)
-button_urutkan_pembeli.pack(side='left', padx=5)
+ttk.Label(frame_cari_pembeli, text="Urutkan:").pack(side='left', padx=(15,5))
+pilihan_kriteria_pembeli = ttk.Combobox(frame_cari_pembeli, values=["Nama", "Harga"], state="readonly", width=10)
+pilihan_kriteria_pembeli.set("Nama")
+pilihan_kriteria_pembeli.pack(side='left', padx=5)
+pilihan_urutan_pembeli = ttk.Combobox(frame_cari_pembeli, values=["Naik", "Turun"], state="readonly", width=10)
+pilihan_urutan_pembeli.set("Naik")
+pilihan_urutan_pembeli.pack(side='left', padx=5)
+tombol_urut_pembeli = ttk.Button(frame_cari_pembeli, text="Urutkan", bootstyle="secondary", command=segarkan_tampilan_pembeli, width=8)
+tombol_urut_pembeli.pack(side='left', padx=5)
 
-tree_pembeli = ttk.Treeview(panel_atas_pembeli, columns=("Nama", "Harga", "Stok"), show="headings", bootstyle="success")
-tree_pembeli.heading("Nama", text="Nama Produk")
-tree_pembeli.heading("Harga", text="Harga Satuan")
-tree_pembeli.heading("Stok", text="Stok Tersedia")
-tree_pembeli.column("Nama", width=300)
-tree_pembeli.column("Harga", width=150, anchor='e')
-tree_pembeli.column("Stok", width=100, anchor='center')
-tree_pembeli.pack(fill='both', expand=True, pady=(5,0))
+tabel_pembeli = ttk.Treeview(panel_atas, columns=("Nama", "Harga", "Stok"), show="headings", bootstyle="success")
+tabel_pembeli.heading("Nama", text="Nama Produk")
+tabel_pembeli.heading("Harga", text="Harga Satuan")
+tabel_pembeli.heading("Stok", text="Stok Tersedia")
+tabel_pembeli.column("Nama", width=300)
+tabel_pembeli.column("Harga", width=150, anchor='e')
+tabel_pembeli.column("Stok", width=100, anchor='center')
+tabel_pembeli.pack(fill='both', expand=True, pady=(5,0))
 
-# Panel Bawah Pembeli (Keranjang dan Kontrol)
-panel_bawah_pembeli = ttk.Frame(frame_pembeli_container, padding=10)
-panel_bawah_pembeli.pack(fill='both', expand=True, pady=(5,0))
+# Panel bawah
+panel_bawah = ttk.Frame(halaman_pembeli, padding=10)
+panel_bawah.pack(fill='both', expand=True, pady=(5,0))
 
-frame_keranjang = ttk.LabelFrame(panel_bawah_pembeli, text="Keranjang Belanja Anda", bootstyle="info")
+frame_keranjang = ttk.LabelFrame(panel_bawah, text="Keranjang Belanja Anda", bootstyle="info")
 frame_keranjang.pack(fill='both', expand=True)
 
-tree_keranjang = ttk.Treeview(frame_keranjang, columns=("Nama", "Harga", "Jumlah", "Subtotal"), show="headings", bootstyle="info")
-tree_keranjang.heading("Nama", text="Nama Produk")
-tree_keranjang.heading("Harga", text="Harga Satuan")
-tree_keranjang.heading("Jumlah", text="Jumlah")
-tree_keranjang.heading("Subtotal", text="Subtotal")
-tree_keranjang.column("Nama", width=250)
-tree_keranjang.column("Harga", width=150, anchor='e')
-tree_keranjang.column("Jumlah", width=80, anchor='center')
-tree_keranjang.column("Subtotal", width=150, anchor='e')
-tree_keranjang.pack(fill='both', expand=True, padx=5, pady=5)
+tabel_keranjang = ttk.Treeview(frame_keranjang, columns=("Nama", "Harga", "Jumlah", "Subtotal"), show="headings", bootstyle="info")
+tabel_keranjang.heading("Nama", text="Nama Produk")
+tabel_keranjang.heading("Harga", text="Harga Satuan")
+tabel_keranjang.heading("Jumlah", text="Jumlah")
+tabel_keranjang.heading("Subtotal", text="Subtotal")
+tabel_keranjang.column("Nama", width=250)
+tabel_keranjang.column("Harga", width=150, anchor='e')
+tabel_keranjang.column("Jumlah", width=80, anchor='center')
+tabel_keranjang.column("Subtotal", width=150, anchor='e')
+tabel_keranjang.pack(fill='both', expand=True, padx=5, pady=5)
 
-frame_kontrol_keranjang = ttk.Frame(frame_keranjang)
-frame_kontrol_keranjang.pack(fill='x', pady=5, padx=5)
-ttk.Label(frame_kontrol_keranjang, text="Jumlah Beli:").pack(side='left', padx=(0,5))
-spinbox_jumlah = ttk.Spinbox(frame_kontrol_keranjang, from_=1, to=100, width=5)
-spinbox_jumlah.set(1)
-spinbox_jumlah.pack(side='left', padx=5)
-button_tambah_ke_keranjang = ttk.Button(frame_kontrol_keranjang, text="Tambah ke Keranjang", bootstyle="info-outline", command=tambah_ke_keranjang)
-button_tambah_ke_keranjang.pack(side='left', padx=10)
-button_hapus_dari_keranjang = ttk.Button(frame_kontrol_keranjang, text="Hapus dari Keranjang", bootstyle="danger-outline", command=hapus_dari_keranjang)
-button_hapus_dari_keranjang.pack(side='left', padx=10)
+frame_kontrol = ttk.Frame(frame_keranjang)
+frame_kontrol.pack(fill='x', pady=5, padx=5)
+ttk.Label(frame_kontrol, text="Jumlah Beli:").pack(side='left', padx=(0,5))
+input_jumlah = ttk.Spinbox(frame_kontrol, from_=1, to=100, width=5)
+input_jumlah.set(1)
+input_jumlah.pack(side='left', padx=5)
+tombol_tambah = ttk.Button(frame_kontrol, text="Tambah ke Keranjang", bootstyle="info-outline", command=tambah_keranjang)
+tombol_tambah.pack(side='left', padx=10)
+tombol_hapus = ttk.Button(frame_kontrol, text="Hapus dari Keranjang", bootstyle="danger-outline", command=hapus_dari_keranjang)
+tombol_hapus.pack(side='left', padx=10)
 
-frame_total_checkout = ttk.Frame(frame_keranjang)
-frame_total_checkout.pack(fill='x', pady=10, padx=5)
-label_total = ttk.Label(frame_total_checkout, text="Total: Rp0", font=("Arial", 14, "bold"))
+frame_total = ttk.Frame(frame_keranjang)
+frame_total.pack(fill='x', pady=10, padx=5)
+label_total = ttk.Label(frame_total, text="Total: Rp0", font=("Arial", 14, "bold"))
 label_total.pack(side='left', expand=True)
-button_checkout = ttk.Button(frame_total_checkout, text="Checkout", bootstyle="success", command=checkout_keranjang, width=15)
-button_checkout.pack(side='right', ipady=5)
+tombol_checkout = ttk.Button(frame_total, text="Checkout", bootstyle="success", command=checkout, width=15)
+tombol_checkout.pack(side='right', ipady=5)
 
-button_kembali_pembeli = ttk.Button(panel_bawah_pembeli, text="Kembali ke Halaman Awal", bootstyle="dark", command=ke_halaman_awal)
-button_kembali_pembeli.pack(pady=10, ipady=5)
+tombol_kembali_pembeli = ttk.Button(panel_bawah, text="Kembali ke Halaman Awal", bootstyle="dark", command=ke_awal)
+tombol_kembali_pembeli.pack(pady=10, ipady=5)
 
+# DATA CONTOH
+daftar_produk = [
+    {'nama': "Madu Asli Premium 250ml", 'harga': 85000, 'stok': 15},
+    {'nama': "Madu Royal Jelly Super 500ml", 'harga': 175000, 'stok': 8},
+    {'nama': "Propolis Gold Extract 10ml", 'harga': 220000, 'stok': 12},
+    {'nama': "Madu Hutan Liar 1kg", 'harga': 250000, 'stok': 5},
+    {'nama': "Sarang Madu Murni 300g", 'harga': 120000, 'stok': 20}
+]
+urutkan_produk(daftar_produk, "nama", "naik")
 
-# --- Inisialisasi Data Awal & Tampilan Awal ---
-def inisialisasi_data_contoh():
-    """Menambahkan beberapa produk contoh ke DATA_PRODUK."""
-    global DATA_PRODUK
-    DATA_PRODUK = [
-        {'nama': "Madu Asli Premium 250ml", 'harga': 85000, 'stok': 15},
-        {'nama': "Madu Royal Jelly Super 500ml", 'harga': 175000, 'stok': 8},
-        {'nama': "Propolis Gold Extract 10ml", 'harga': 220000, 'stok': 12},
-        {'nama': "Madu Hutan Liar 1kg", 'harga': 250000, 'stok': 5},
-        {'nama': "Sarang Madu Murni 300g", 'harga': 120000, 'stok': 20}
-    ]
-    # Urutkan data awal (opsional, tapi baik untuk tampilan pertama)
-    insertion_sort_produk(DATA_PRODUK, "nama", "naik")
-
-inisialisasi_data_contoh()
-tampilkan_frame(frame_awal) # Mulai dari frame awal
-
+# MULAI PROGRAM
+tampilkan_halaman(halaman_awal)
 app.mainloop()
