@@ -256,7 +256,6 @@ def cari_produk_pembeli():
     )
 
 def urutkan_produk_pembeli():
-    """Mengurutkan produk di Treeview pembeli berdasarkan pilihan Combobox."""
     refresh_pembeli_treeview(
         search_term_pembeli.get(),
         combo_sort_kriteria_pembeli.get().lower(),
