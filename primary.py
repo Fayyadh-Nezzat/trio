@@ -2,39 +2,11 @@ import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from tkinter import messagebox, simpledialog
 
-# --- Variabel Global untuk Data Utama (Array) ---
-# DATA_PRODUK akan menyimpan list of dictionaries, dimana setiap dictionary adalah produk.
-# Contoh: {'nama': 'Madu Super', 'harga': 100000, 'stok': 20, 'original_index_for_edit': -1}
-# 'original_index_for_edit' hanya digunakan sementara saat mengedit.
 DATA_PRODUK = []
-# KERANJANG_BELANJA juga list of dictionaries
-# Contoh: {'nama': 'Madu Super', 'harga': 100000, 'jumlah': 2, 'subtotal': 200000}
 KERANJANG_BELANJA = []
-
-# Variabel global untuk menyimpan indeks produk yang sedang diedit di DATA_PRODUK
-# atau nama asli produk yang sedang diedit (jika nama bisa diubah)
-# Untuk kesederhanaan, kita akan melacak nama asli produk yang diedit.
 PRODUK_SEDANG_DIEDIT_NAMA_ASLI = None
 
-# --- Tipe Bentukan (Representasi Produk dan Item Keranjang) ---
-# Produk: {'nama': str, 'harga': int, 'stok': int}
-# Item Keranjang: {'nama': str, 'harga_satuan': int, 'jumlah': int, 'subtotal': int}
-
-# --- Fungsi Utilitas dan Logika Bisnis ---
-
 def sequential_search_produk(nama_produk, data_list):
-    """
-    Melakukan pencarian sequential untuk produk berdasarkan nama.
-    Mengembalikan indeks produk jika ditemukan, selain itu -1.
-    Implementasi tanpa 'break'.
-
-    Args:
-        nama_produk (str): Nama produk yang dicari.
-        data_list (list): List produk (DATA_PRODUK).
-
-    Returns:
-        int: Indeks produk dalam list, atau -1 jika tidak ditemukan.
-    """
     found_index = -1
     i = 0
     still_searching = True
@@ -46,83 +18,56 @@ def sequential_search_produk(nama_produk, data_list):
     return found_index
 
 def insertion_sort_produk(data_list, kriteria, urutan):
-    """
-    Mengurutkan list produk menggunakan Insertion Sort.
-    Bisa mengurutkan berdasarkan 'nama' atau 'harga',
-    secara 'naik' (ascending) atau 'turun' (descending).
-    Implementasi tanpa 'break' atau 'continue'.
-
-    Args:
-        data_list (list): List produk yang akan diurutkan (akan dimodifikasi langsung).
-        kriteria (str): Kriteria pengurutan ('nama' atau 'harga').
-        urutan (str): Urutan pengurutan ('naik' atau 'turun').
-    """
     n = len(data_list)
     i = 1
     while i < n:
         key_item = data_list[i]
         j = i - 1
         
-        # Tentukan kondisi perbandingan berdasarkan urutan
         compare_condition_met = False
         if urutan == 'naik':
             if kriteria == 'harga':
                 if j >= 0 and key_item['harga'] < data_list[j]['harga']:
                     compare_condition_met = True
-            else:  # kriteria == 'nama'
+            else: 
                 if j >= 0 and key_item['nama'] < data_list[j]['nama']:
                     compare_condition_met = True
-        else:  # urutan == 'turun'
+        else: 
             if kriteria == 'harga':
                 if j >= 0 and key_item['harga'] > data_list[j]['harga']:
                     compare_condition_met = True
-            else:  # kriteria == 'nama'
+            else:
                 if j >= 0 and key_item['nama'] > data_list[j]['nama']:
                     compare_condition_met = True
         
         while compare_condition_met:
             data_list[j + 1] = data_list[j]
             j -= 1
-            # Update kondisi perbandingan untuk iterasi berikutnya dalam while internal
-            compare_condition_met = False # Reset sebelum cek ulang
+            compare_condition_met = False
             if urutan == 'naik':
                 if kriteria == 'harga':
                     if j >= 0 and key_item['harga'] < data_list[j]['harga']:
                         compare_condition_met = True
-                else:  # kriteria == 'nama'
+                else:
                     if j >= 0 and key_item['nama'] < data_list[j]['nama']:
                         compare_condition_met = True
-            else:  # urutan == 'turun'
+            else: 
                 if kriteria == 'harga':
                     if j >= 0 and key_item['harga'] > data_list[j]['harga']:
                         compare_condition_met = True
-                else:  # kriteria == 'nama'
+                else:
                     if j >= 0 and key_item['nama'] > data_list[j]['nama']:
                         compare_condition_met = True
                         
         data_list[j + 1] = key_item
         i += 1
 
-# --- Fungsi untuk Halaman Penjual ---
-
 def refresh_penjual_treeview(search_term="", sort_criteria="nama", sort_order="naik"):
-    """
-    Membersihkan dan mengisi ulang Treeview penjual dengan data dari DATA_PRODUK.
-    Menerapkan filter pencarian dan pengurutan.
-
-    Args:
-        search_term (str, optional): Kata kunci untuk filter nama produk. Defaults to "".
-        sort_criteria (str, optional): Kriteria urut ('nama' atau 'harga'). Defaults to "nama".
-        sort_order (str, optional): Urutan ('naik' atau 'turun'). Defaults to "naik".
-    """
-    # Hapus semua item lama dari tree
     for item in tree_penjual.get_children():
         tree_penjual.delete(item)
 
-    # Buat salinan untuk diurutkan dan difilter tanpa mengubah DATA_PRODUK asli secara permanen (kecuali urutannya)
-    display_list = list(DATA_PRODUK) # Salinan dangkal cukup karena elemen adalah dict
+    display_list = list(DATA_PRODUK)
 
-    # Filter berdasarkan search_term
     if search_term:
         filtered_list = []
         i = 0
@@ -132,10 +77,8 @@ def refresh_penjual_treeview(search_term="", sort_criteria="nama", sort_order="n
             i += 1
         display_list = filtered_list
     
-    # Urutkan display_list (ini akan memodifikasi display_list)
     insertion_sort_produk(display_list, sort_criteria, sort_order)
 
-    # Isi treeview dengan data yang sudah difilter dan diurutkan
     idx = 0
     while idx < len(display_list):
         produk = display_list[idx]
@@ -143,10 +86,6 @@ def refresh_penjual_treeview(search_term="", sort_criteria="nama", sort_order="n
         idx += 1
 
 def aksi_tambah_atau_edit_produk():
-    """
-    Menangani logika untuk menambah produk baru atau menyimpan perubahan pada produk yang diedit.
-    Menggunakan variabel global PRODUK_SEDANG_DIEDIT_NAMA_ASLI untuk menentukan mode.
-    """
     global PRODUK_SEDANG_DIEDIT_NAMA_ASLI
 
     nama = entry_nama.get()
@@ -167,11 +106,9 @@ def aksi_tambah_atau_edit_produk():
         return
 
     if PRODUK_SEDANG_DIEDIT_NAMA_ASLI: # Mode Edit
-        # Cari produk di DATA_PRODUK berdasarkan nama asli yang disimpan
         index_produk = sequential_search_produk(PRODUK_SEDANG_DIEDIT_NAMA_ASLI, DATA_PRODUK)
         
         if index_produk != -1:
-            # Cek apakah nama baru (jika diubah) sudah ada, kecuali itu produk yang sama
             if nama != PRODUK_SEDANG_DIEDIT_NAMA_ASLI:
                 existing_index_new_name = sequential_search_produk(nama, DATA_PRODUK)
                 if existing_index_new_name != -1:
@@ -185,12 +122,11 @@ def aksi_tambah_atau_edit_produk():
         else:
             messagebox.showerror("Error", "Produk asli yang diedit tidak ditemukan. Ini seharusnya tidak terjadi.")
         
-        # Reset mode edit
         PRODUK_SEDANG_DIEDIT_NAMA_ASLI = None
         button_tambah_edit.config(text="Tambah Produk")
         label_form_produk.config(text="Tambah Produk Baru")
 
-    else: # Mode Tambah
+    else:
         if sequential_search_produk(nama, DATA_PRODUK) != -1:
             messagebox.showerror("Error", f"ProduK dengan nama '{nama}' sudah ada!")
             return
@@ -198,7 +134,6 @@ def aksi_tambah_atau_edit_produk():
         DATA_PRODUK.append({'nama': nama, 'harga': harga, 'stok': stok})
         messagebox.showinfo("Sukses", "Produk berhasil ditambahkan!")
 
-    # Kosongkan input fields
     entry_nama.delete(0, 'end')
     entry_harga.delete(0, 'end')
     entry_stok.delete(0, 'end')
@@ -211,23 +146,19 @@ def aksi_tambah_atau_edit_produk():
     refresh_pembeli_treeview() # Update juga tampilan pembeli
 
 def muat_produk_untuk_edit():
-    """
-    Memuat detail produk yang dipilih dari Treeview penjual ke form input untuk diedit.
-    """
     global PRODUK_SEDANG_DIEDIT_NAMA_ASLI
     selected_items = tree_penjual.selection()
     if not selected_items:
         messagebox.showerror("Error", "Pilih produk yang akan diedit!")
         return
     
-    selected_item_id = selected_items[0] # Ambil item pertama jika ada multiple selection (seharusnya tidak)
+    selected_item_id = selected_items[0]
     produk_values = tree_penjual.item(selected_item_id)['values']
     
     nama_produk_terpilih = produk_values[0]
     harga_produk_terpilih_str = produk_values[1].replace("Rp", "").replace(",", "")
-    stok_produk_terpilih_str = str(produk_values[2]) # Pastikan string
+    stok_produk_terpilih_str = str(produk_values[2])
 
-    # Simpan nama asli untuk referensi saat menyimpan
     PRODUK_SEDANG_DIEDIT_NAMA_ASLI = nama_produk_terpilih
     
     entry_nama.delete(0, 'end')
@@ -242,9 +173,6 @@ def muat_produk_untuk_edit():
     entry_nama.focus() # Fokus ke entry nama
 
 def hapus_produk_terpilih():
-    """
-    Menghapus produk yang dipilih dari Treeview penjual dan dari DATA_PRODUK.
-    """
     global PRODUK_SEDANG_DIEDIT_NAMA_ASLI
     selected_items = tree_penjual.selection()
     if not selected_items:
@@ -258,13 +186,9 @@ def hapus_produk_terpilih():
         index_to_delete = sequential_search_produk(nama_produk_dihapus, DATA_PRODUK)
         
         if index_to_delete != -1:
-            # Hapus dari DATA_PRODUK
-            # Untuk menghindari kompleksitas shift manual pada 'static array simulation',
-            # kita gunakan del pada list Python. Jika static array strict, perlu shifting.
             del DATA_PRODUK[index_to_delete]
             messagebox.showinfo("Sukses", f"Produk '{nama_produk_dihapus}' berhasil dihapus.")
-
-            # Jika produk yang dihapus adalah yang sedang diedit, reset form
+            
             if PRODUK_SEDANG_DIEDIT_NAMA_ASLI == nama_produk_dihapus:
                 PRODUK_SEDANG_DIEDIT_NAMA_ASLI = None
                 entry_nama.delete(0, 'end')
@@ -283,7 +207,6 @@ def hapus_produk_terpilih():
         refresh_pembeli_treeview() # Update juga tampilan pembeli
 
 def cari_produk_penjual():
-    """Memfilter Treeview penjual berdasarkan input pencarian."""
     refresh_penjual_treeview(
         search_term_penjual.get(),
         combo_sort_kriteria_penjual.get().lower(),
@@ -291,37 +214,23 @@ def cari_produk_penjual():
     )
 
 def urutkan_produk_penjual():
-    """Mengurutkan produk di Treeview penjual berdasarkan pilihan Combobox."""
     refresh_penjual_treeview(
         search_term_penjual.get(),
         combo_sort_kriteria_penjual.get().lower(),
         combo_sort_urutan_penjual.get().lower()
     )
 
-# --- Fungsi untuk Halaman Pembeli ---
-
 def refresh_pembeli_treeview(search_term="", sort_criteria="nama", sort_order="naik"):
-    """
-    Membersihkan dan mengisi ulang Treeview pembeli dengan data dari DATA_PRODUK.
-    Menerapkan filter pencarian dan pengurutan. Hanya menampilkan produk dengan stok > 0.
-
-    Args:
-        search_term (str, optional): Kata kunci untuk filter nama produk. Defaults to "".
-        sort_criteria (str, optional): Kriteria urut ('nama' atau 'harga'). Defaults to "nama".
-        sort_order (str, optional): Urutan ('naik' atau 'turun'). Defaults to "naik".
-    """
     for item in tree_pembeli.get_children():
         tree_pembeli.delete(item)
 
     display_list_pembeli = []
-    # Salin produk yang stoknya > 0
     i = 0
     while i < len(DATA_PRODUK):
         if DATA_PRODUK[i]['stok'] > 0:
             display_list_pembeli.append(dict(DATA_PRODUK[i])) # Salin dict agar aman
         i += 1
     
-    # Filter berdasarkan search_term
     if search_term:
         filtered_list = []
         i = 0
@@ -331,7 +240,6 @@ def refresh_pembeli_treeview(search_term="", sort_criteria="nama", sort_order="n
             i += 1
         display_list_pembeli = filtered_list
     
-    # Urutkan display_list_pembeli
     insertion_sort_produk(display_list_pembeli, sort_criteria, sort_order)
     
     idx = 0
@@ -341,7 +249,6 @@ def refresh_pembeli_treeview(search_term="", sort_criteria="nama", sort_order="n
         idx += 1
 
 def cari_produk_pembeli():
-    """Memfilter Treeview pembeli berdasarkan input pencarian."""
     refresh_pembeli_treeview(
         search_term_pembeli.get(),
         combo_sort_kriteria_pembeli.get().lower(),
