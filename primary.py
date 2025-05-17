@@ -323,7 +323,7 @@ app.resizable(True, True)
 halaman_awal = ttk.Frame(app)
 label_judul = ttk.Label(halaman_awal, text="Selamat Datang di Toko MaduMart", font=("Arial", 26, "bold"))
 label_judul.pack(pady=(60,30))
-label_sub = ttk.Label(halaman_awal, text="Silakan pilih peran Anda:", font=("Arial", 16))
+label_sub = ttk.Label(halaman_awal, text="Silakan Login:", font=("Arial", 16))
 label_sub.pack(pady=10)
 
 frame_tombol = ttk.Frame(halaman_awal)
