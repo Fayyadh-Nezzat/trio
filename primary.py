@@ -2,21 +2,17 @@ import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from tkinter import messagebox, simpledialog
 
-# --- Variabel Global untuk Data Utama (Array) ---
+# Variabel Global untuk Data Utama (Array)
 # DATA_PRODUK akan menyimpan list of dictionaries, dimana setiap dictionary adalah produk.
-# Contoh: {'nama': 'Madu Super', 'harga': 100000, 'stok': 20, 'original_index_for_edit': -1}
-# 'original_index_for_edit' hanya digunakan sementara saat mengedit.
 DATA_PRODUK = []
+
 # KERANJANG_BELANJA juga list of dictionaries
-# Contoh: {'nama': 'Madu Super', 'harga': 100000, 'jumlah': 2, 'subtotal': 200000}
 KERANJANG_BELANJA = []
 
 # Variabel global untuk menyimpan indeks produk yang sedang diedit di DATA_PRODUK
-# atau nama asli produk yang sedang diedit (jika nama bisa diubah)
-# Untuk kesederhanaan, kita akan melacak nama asli produk yang diedit.
-PRODUK_SEDANG_DIEDIT_NAMA_ASLI = None # untuk membandingkan dengan data_produk saat user selesai edit
+PRODUK_SEDANG_DIEDIT_NAMA_ASLI = None # untuk membandingkan dengan DATA_PRODUK saat user selesai edit
 
-# --- Tipe Bentukan (Representasi Produk dan Item Keranjang) ---
+# Tipe Bentukan (Representasi Produk dan Item Keranjang)
 # Produk: {'nama': str, 'harga': int, 'stok': int}
 # Item Keranjang: {'nama': str, 'harga_satuan': int, 'jumlah': int, 'subtotal': int}
 
@@ -25,13 +21,6 @@ def sequential_search_produk(nama_produk, data_list):
     Melakukan pencarian sequential untuk produk berdasarkan nama.
     Mengembalikan indeks produk jika ditemukan, selain itu -1.
     Implementasi tanpa 'break'.
-
-    Args:
-        nama_produk (str): Nama produk yang dicari.
-        data_list (list): List produk (DATA_PRODUK).
-
-    Returns:
-        int: Indeks produk dalam list, atau -1 jika tidak ditemukan.
     """
     found_index = -1
     i = 0
@@ -96,11 +85,6 @@ def refresh_penjual_treeview(search_term="", sort_criteria="nama", sort_order="n
     """
     Membersihkan dan mengisi ulang Treeview penjual dengan data dari DATA_PRODUK.
     Menerapkan filter pencarian dan pengurutan.
-
-    Args:
-        search_term (str, optional): Kata kunci untuk filter nama produk. Defaults to "".
-        sort_criteria (str, optional): Kriteria urut ('nama' atau 'harga'). Defaults to "nama".
-        sort_order (str, optional): Urutan ('naik' atau 'turun'). Defaults to "naik".
     """
     # Hapus semua item lama dari tree
     for item in tree_penjual.get_children():
@@ -293,11 +277,6 @@ def refresh_pembeli_treeview(search_term="", sort_criteria="nama", sort_order="n
     """
     Membersihkan dan mengisi ulang Treeview pembeli dengan data dari DATA_PRODUK.
     Menerapkan filter pencarian dan pengurutan. Hanya menampilkan produk dengan stok > 0.
-
-    Args:
-        search_term (str, optional): Kata kunci untuk filter nama produk. Defaults to "".
-        sort_criteria (str, optional): Kriteria urut ('nama' atau 'harga'). Defaults to "nama".
-        sort_order (str, optional): Urutan ('naik' atau 'turun'). Defaults to "naik".
     """
     for item in tree_pembeli.get_children():
         tree_pembeli.delete(item)
