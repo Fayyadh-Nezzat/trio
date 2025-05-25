@@ -331,7 +331,7 @@ frame_tombol.pack(pady=20)
 
 tombol_penjual = ttk.Button(frame_tombol, text="Masuk sebagai Penjual", bootstyle="primary-outline", width=30, command=ke_penjual)
 tombol_penjual.pack(pady=15, ipady=5)
-tombol_pembeli = ttk.Button(frame_tombol, text="Masuk sebagai Pembeli", bootstyle="success-outline", width=30, command=ke_pembeli)
+tombol_pembeli = ttk.Button(frame_tombol, text="Masuk sebagai Pembeli", bootstyle="primary-outline", width=30, command=ke_pembeli)
 tombol_pembeli.pack(pady=15, ipady=5)
 
 # HALAMAN PENJUAL
