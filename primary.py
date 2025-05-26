@@ -377,9 +377,11 @@ def ke_halaman_pembeli():
     refresh_keranjang_treeview()
     tampilkan_frame(frame_pembeli_container)
 
+# TAMPILAN AWAL
 app = ttk.Window(themename="minty", title="Toko MaduMart", size=(900, 700))
 app.resizable(True, True)
 
+# HALAMAN AWAL
 frame_awal = ttk.Frame(app)
 label_judul_awal = ttk.Label(frame_awal, text="Selamat Datang di Toko MaduMart", font=("Arial", 26, "bold"))
 label_judul_awal.pack(pady=(60,30))
@@ -392,11 +394,16 @@ button_ke_penjual.pack(pady=15, ipady=5)
 button_ke_pembeli = ttk.Button(frame_tombol_awal, text="Masuk sebagai Pembeli", bootstyle="primary-outline", width=30, command=ke_halaman_pembeli)
 button_ke_pembeli.pack(pady=15, ipady=5)
 
+# HALAMAN PENJUAL
 frame_penjual_container = ttk.Frame(app)
+
+# FRAME KIRI
 frame_kiri_penjual = ttk.Frame(frame_penjual_container, padding=10)
 frame_kiri_penjual.pack(side='left', fill='y', padx=10, pady=10)
 label_judul_penjual = ttk.Label(frame_kiri_penjual, text="Manajemen Produk", font=("Arial", 20, "bold"))
 label_judul_penjual.pack(pady=(0,15))
+
+# FRAME ADD/EDIT
 label_form_produk = ttk.Label(frame_kiri_penjual, text="Tambah Produk Baru", font=("Arial", 12))
 label_form_produk.pack(pady=(10,5))
 frame_form_produk = ttk.Frame(frame_kiri_penjual)
@@ -413,6 +420,8 @@ entry_stok.grid(row=2, column=1, padx=5, pady=5)
 button_tambah_edit = ttk.Button(frame_form_produk, text="Tambah Produk", bootstyle="primary", command=aksi_tambah_atau_edit_produk)
 button_tambah_edit.grid(row=3, column=0, columnspan=2, pady=10)
 ttk.Separator(frame_kiri_penjual, orient='horizontal').pack(fill='x', pady=15)
+
+# KONTROL TABEL
 label_aksi_produk = ttk.Label(frame_kiri_penjual, text="Aksi pada Produk Terpilih:", font=("Arial", 12))
 label_aksi_produk.pack(pady=(10,5))
 frame_aksi_tree_penjual = ttk.Frame(frame_kiri_penjual)
@@ -422,6 +431,8 @@ button_muat_edit.pack(side='left', padx=5)
 button_hapus_produk = ttk.Button(frame_aksi_tree_penjual, text="Hapus Produk", bootstyle="danger-outline", command=hapus_produk_terpilih)
 button_hapus_produk.pack(side='left', padx=5)
 ttk.Separator(frame_kiri_penjual, orient='horizontal').pack(fill='x', pady=15)
+
+# PENCARIAN DAN PENGURUTAN
 label_filter_penjual = ttk.Label(frame_kiri_penjual, text="Pencarian & Pengurutan:", font=("Arial", 12))
 label_filter_penjual.pack(pady=(10,5))
 frame_filter_penjual = ttk.Frame(frame_kiri_penjual)
@@ -444,6 +455,8 @@ button_urutkan_penjual = ttk.Button(frame_sort_penjual, text="Urutkan", bootstyl
 button_urutkan_penjual.grid(row=0, column=3, padx=5)
 button_kembali_penjual = ttk.Button(frame_kiri_penjual, text="Kembali ke Halaman Awal", bootstyle="dark", command=ke_halaman_awal)
 button_kembali_penjual.pack(pady=(30,10), ipady=5, fill='x')
+
+# FRAME KANAN
 frame_kanan_penjual = ttk.Frame(frame_penjual_container, padding=10)
 frame_kanan_penjual.pack(side='right', fill='both', expand=True)
 label_daftar_produk_penjual = ttk.Label(frame_kanan_penjual, text="Daftar Produk di Toko", font=("Arial", 16, "bold"))
@@ -457,11 +470,16 @@ tree_penjual.column("Harga", width=120, anchor='e', stretch=False)
 tree_penjual.column("Stok", width=80, anchor='center', stretch=False)
 tree_penjual.pack(fill='both', expand=True)
 
+# HALAMAN PEMBELI
 frame_pembeli_container = ttk.Frame(app)
+
+# TABEL ATAS
 panel_atas_pembeli = ttk.Frame(frame_pembeli_container, padding=10)
 panel_atas_pembeli.pack(fill='both', expand=True, pady=(0,5))
 label_judul_pembeli = ttk.Label(panel_atas_pembeli, text="Pilih Produk untuk Dibeli", font=("Arial", 20, "bold"))
 label_judul_pembeli.pack(pady=(0,10))
+
+# PENCARIAN DAN PENGURUTAN
 frame_filter_sort_pembeli = ttk.Frame(panel_atas_pembeli)
 frame_filter_sort_pembeli.pack(fill='x', pady=5)
 ttk.Label(frame_filter_sort_pembeli, text="Cari Nama:").pack(side='left', padx=(0,5))
@@ -486,6 +504,8 @@ tree_pembeli.column("Nama", width=300)
 tree_pembeli.column("Harga", width=150, anchor='e')
 tree_pembeli.column("Stok", width=100, anchor='center')
 tree_pembeli.pack(fill='both', expand=True, pady=(5,0))
+
+# TABEL BAWAH
 panel_bawah_pembeli = ttk.Frame(frame_pembeli_container, padding=10)
 panel_bawah_pembeli.pack(fill='both', expand=True, pady=(5,0))
 frame_keranjang = ttk.LabelFrame(panel_bawah_pembeli, text="Keranjang Belanja Anda", bootstyle="info")
@@ -519,6 +539,7 @@ button_checkout.pack(side='right', ipady=5)
 button_kembali_pembeli = ttk.Button(panel_bawah_pembeli, text="Kembali ke Halaman Awal", bootstyle="dark", command=ke_halaman_awal)
 button_kembali_pembeli.pack(pady=10, ipady=5)
 
+# DATA DUMMY
 def inisialisasi_data_contoh():
     global DATA_PRODUK
     DATA_PRODUK = [
