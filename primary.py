@@ -1,6 +1,6 @@
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
-from tkinter import messagebox, simpledialog
+from tkinter import messagebox
 
 # Variabel Global untuk Data Utama (Array)
 # DATA_PRODUK akan menyimpan list of dictionaries, dimana setiap dictionary adalah produk.
