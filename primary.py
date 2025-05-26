@@ -524,7 +524,7 @@ app.resizable(True, True)
 frame_awal = ttk.Frame(app)
 label_judul_awal = ttk.Label(frame_awal, text="Selamat Datang di Toko MaduMart", font=("Arial", 26, "bold"))
 label_judul_awal.pack(pady=(60,30))
-label_sub_judul_awal = ttk.Label(frame_awal, text="Silakan pilih peran Anda:", font=("Arial", 16))
+label_sub_judul_awal = ttk.Label(frame_awal, text="Silakan pilih :", font=("Arial", 16))
 label_sub_judul_awal.pack(pady=10)
 
 frame_tombol_awal = ttk.Frame(frame_awal)
@@ -532,7 +532,7 @@ frame_tombol_awal.pack(pady=20)
 
 button_ke_penjual = ttk.Button(frame_tombol_awal, text="Masuk sebagai Penjual", bootstyle="primary-outline", width=30, command=ke_halaman_penjual)
 button_ke_penjual.pack(pady=15, ipady=5)
-button_ke_pembeli = ttk.Button(frame_tombol_awal, text="Masuk sebagai Pembeli", bootstyle="success-outline", width=30, command=ke_halaman_pembeli)
+button_ke_pembeli = ttk.Button(frame_tombol_awal, text="Masuk sebagai Pembeli", bootstyle="primary-outline", width=30, command=ke_halaman_pembeli)
 button_ke_pembeli.pack(pady=15, ipady=5)
 
 # --- Frame Penjual (Container) ---
